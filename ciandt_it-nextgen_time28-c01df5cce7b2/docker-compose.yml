@@ -1,0 +1,86 @@
+services:
+  usermanagement:
+    build:
+      context: ./java_backend
+      args:
+        SERVICE_NAME: usermanagement
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=root
+      - JWT_SECRET_KEY=4Z^XrroxR@dWxqf$!@#qGr4P
+      - JWT_ISSUER=user-api
+    depends_on:
+      - db
+
+  feedbackrequest:
+    build:
+      context: ./java_backend
+      args:
+        SERVICE_NAME: feedbackrequest
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=root
+      - JWT_SECRET_KEY=4Z^XrroxR@dWxqf$!@#qGr4P
+      - JWT_ISSUER=user-api
+      - SPRING_MAIL_HOST=smtp.gmail.com
+      - SPRING_MAIL_PORT=587
+      - SPRING_MAIL_USERNAME=nextgen2025time28@gmail.com
+      - SPRING_MAIL_PASSWORD=tzzq hmel mnzr mlyw
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLED=true
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED=true
+      - USER_MANAGEMENT_URL=http://usermanagement:8080/users
+    depends_on:
+      - db
+
+  feedbackresponse:
+    build:
+      context: ./java_backend
+      args:
+        SERVICE_NAME: feedbackresponse
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=root
+      - JWT_SECRET_KEY=4Z^XrroxR@dWxqf$!@#qGr4P
+      - JWT_ISSUER=user-api
+    depends_on:
+      - db
+
+  feedbackresponseview:
+    build: 
+      context: ./python_backend
+      args:
+        APP_NAME: feedbackresponseview
+    environment:
+      - DATABASE_URL=postgresql://postgres:root@db:5432/feedback
+      - JWT_SECRET_KEY=4Z^XrroxR@dWxqf$!@#qGr4P
+      - JWT_ISSUER=user-api
+    depends_on:
+      - db
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: feedback
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+    - "5432:5432"
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - usermanagement
+      - feedbackrequest
+      - feedbackresponse
+      - feedbackresponseview

@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  usermanagement:
+    image: maven:3-openjdk-17-slim
+    volumes:
+      - ./java_backend:/app
+    working_dir: /app
+    command: ["sh", "-c", "mvn clean install -DskipTests && mvn -pl microservices/usermanagement spring-boot:run"]
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=root
+      - JWT_SECRET_KEY=4Z^XrroxR@dWxqf$!@#qGr4P
+      - JWT_ISSUER=user-api
+    depends_on:
+      - db
+
+  feedbackrequest:
+    image: maven:3-openjdk-17-slim
+    volumes:
+      - ./java_backend:/app
+    working_dir: /app
+    command: ["sh", "-c", "mvn clean install -DskipTests && mvn -pl microservices/feedbackrequest spring-boot:run"]
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=root
+      - JWT_SECRET_KEY=4Z^XrroxR@dWxqf$!@#qGr4P
+      - JWT_ISSUER=user-api
+    depends_on:
+      - db
+
+  feedbackresponse:
+    image: maven:3-openjdk-17-slim
+    volumes:
+      - ./java_backend:/app
+    working_dir: /app
+    command: ["sh", "-c", "mvn clean install -DskipTests && mvn -pl microservices/feedbackresponse spring-boot:run"]
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=root
+      - JWT_SECRET_KEY=4Z^XrroxR@dWxqf$!@#qGr4P
+      - JWT_ISSUER=user-api
+    depends_on:
+      - db
+
+  feedbackresponseview:
+    build:
+      context: ./python_backend
+      args:
+        APP_NAME: feedbackresponseview
+    volumes:
+      - ./python_backend:/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:root@db:5432/feedback
+      - JWT_SECRET_KEY=4Z^XrroxR@dWxqf$!@#qGr4P
+      - JWT_ISSUER=user-api
+    depends_on:
+      - db
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: feedback
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    depends_on:
+      - usermanagement
+      - feedbackrequest
+      - feedbackresponse
+      - feedbackresponseview

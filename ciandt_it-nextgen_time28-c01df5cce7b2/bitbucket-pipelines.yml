@@ -1,0 +1,81 @@
+image: atlassian/default-image:3
+
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Testes dos Microserviços Java
+          image:  maven:3-openjdk-17-slim
+          caches:
+            - maven
+          script:
+            - cd java_backend
+            - mvn clean test
+            - cd -
+          condition:
+            changesets:
+              includePaths:
+                - java_backend/**
+          
+      - step:
+          name: Testes do Serviço Python
+          image: python:3.12
+          caches:
+            - pip
+          script:
+            - pip install poetry
+            - cd python_backend/feedbackresponseview
+            - poetry install
+            - poetry run pytest
+            - cd -
+          condition:
+            changesets:
+              includePaths:
+                - python_backend/feedbackresponseview/**
+
+      - step:
+          name: Testes do API Gateway (Node.js)
+          image: node:18
+          caches:
+            - node
+          script:
+            - cd node_backend/api_gateway
+            - npm install
+            - npm run test
+            - cd -
+          condition:
+            changesets:
+              includePaths:
+                - node_backend/api_gateway/**
+
+      - step:
+          name: Testes do Frontend (NextJS)
+          image: node:18
+          caches:
+            - node
+          script:
+            - cd frontend
+            - npm install
+            - npm run test
+            - cd -
+          condition:
+            changesets:
+              includePaths:
+                - frontend/**
+
+      - step:
+          name: Executar script Flow Code Review
+          image: python:3.8
+          script:
+            - PR_ID=${BITBUCKET_PR_ID}
+            - PR_URL="https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_FULL_NAME}/pullrequests/${PR_ID}"
+            - echo "Iniciando a execução do script do Code Analyzer"
+            - echo "A PR_URL é $PR_URL"
+            - pip install virtualenv
+            - python -m venv venv
+            - source venv/bin/activate
+            - pip install --upgrade pip
+            - git clone https://$USERNAME:$TOKEN@bitbucket.org/ciandt_it/code_analyzer.git
+            - cd code_analyzer
+            - pip install -r requirements.txt
+            - python app.py --pr_url "$PR_URL"

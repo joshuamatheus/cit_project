@@ -1,0 +1,2 @@
+class FeedbackResponseRepository:
+    pass
